@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Crof.ai Dashboard Cost Enrichment
 // @namespace    https://crof.ai/
-// @version      1.7.2
+// @version      1.7.3
 // @description  Shows per-model cost breakdown on Crof.ai dashboard usage charts.
 // @author       CrofUserScripts
 // @match        https://crof.ai/dashboard
@@ -17,7 +17,7 @@
 (function () {
     'use strict';
     var CACHE_MS = 10 * 60 * 1000;
-    var pricing = null, pricingTime = 0;
+    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.3';
 
     async function loadPricing(force) {
         var now = Date.now();
@@ -102,8 +102,12 @@
     // ─── Enrich chart ────────────────────────────────────────────────
     function injectStrip(usage, source) {
         if (!usage || (!usage.input && !usage.output)) return;
-        var target = findTarget(); if (!target) return;
-        target.querySelectorAll('.cc-strip,.cc-breakdown').forEach(function(el) { el.remove(); });
+        // Remove old strips wherever they are
+        document.querySelectorAll('.cc-strip,.cc-breakdown').forEach(function(el) { el.remove(); });
+        // Inject after .usage-toggle (stable sibling, survives chart re-renders)
+        var anchor = document.querySelector('.usage-toggle');
+        var target = anchor ? anchor.parentElement : document.body;
+        var ref = anchor ? anchor.nextElementSibling : target.firstChild;
 
         var modelCosts = [], totalCost = 0, totalIn = 0, totalOut = 0, totalCache = 0;
         if (pricing && pricing.size && usage.perModel) {
@@ -124,7 +128,8 @@
         var st = document.createElement('div'); st.className = 'cc-strip';
         st.innerHTML = '<span class=cc-item><span class=cc-lbl>Cost</span><span class="cc-val ' + cl + '">' + fmt$(totalCost) + '</span></span><span class=cc-sep></span><span class=cc-item><span class=cc-lbl>In</span><span class=cc-val>' + fmt$(totalIn) + '</span><span class=cc-item><span class=cc-lbl>Out</span><span class=cc-val>' + fmt$(totalOut) + '</span></span></span>';
         if (totalCache > 0) st.innerHTML += '<span class=cc-sep></span><span class=cc-item><span class=cc-lbl>Cache</span><span class=cc-val>' + fmt$(totalCache) + '</span></span>';
-        target.insertBefore(st, target.firstChild);
+        st.innerHTML += '<span style="margin-left:auto;font-size:10px;color:#8b949e;opacity:0.6" data-version="' + VERSION + '">v' + VERSION + '</span>';
+        target.insertBefore(st, ref);
 
         // Per-model breakdown
         if (modelCosts.length > 0) {
@@ -161,24 +166,7 @@
             bd.innerHTML = header + rows;
             target.insertBefore(bd, st.nextSibling);
         }
-
         console.log('[CrofCost] ✅ $' + totalCost.toFixed(4) + ' across ' + modelCosts.length + ' models (' + source + ')');
-    }
-
-    function findTarget() {
-        var b = document.querySelectorAll('button');
-        var back = null; b.forEach(function(x) { if (x.textContent.trim() === '←') back = x; });
-        if (back) {
-            var nav = back.closest('nav') || back.closest('[class*="sidebar"]');
-            if (nav && nav.parentElement) {
-                var kids = nav.parentElement.children;
-                for (var i = 0; i < kids.length; i++) { if (kids[i] !== nav && kids[i].offsetHeight > 100) return kids[i]; }
-                var cv = nav.parentElement.querySelector('canvas'); if (cv) return cv.closest('div,section') || cv.parentElement;
-            }
-        }
-        var m = document.querySelector('main,[role="main"],article'); if (m && m.offsetHeight > 100) return m;
-        var cv = document.querySelector('canvas'); if (cv) return cv.closest('div,section,main') || cv.parentElement;
-        return document.body;
     }
 
     // ─── Init ─────────────────────────────────────────────────────────
@@ -189,12 +177,14 @@
         // Process all usage data — key-usage (per-key) endpoints naturally
         // overwrite total-usage results when they arrive second, giving the
         // correct per-model breakdown without any DOM-dependent filter checks.
+        // Saves lastUsage so we can re-inject when the dashboard wipes our strip
+        // (e.g. on clear-filter or month navigation).
         function processUsage(data, url) {
-            var usage = parseUsage(data, url);
-            if (!usage) return;
-            var tag = url.indexOf('/key-usage/') >= 0 ? 'key' : 'total';
-            if (pricing) injectStrip(usage, tag);
-            else loadPricing().then(function(){ injectStrip(usage, tag); }).catch(function(){});
+            var u = parseUsage(data, url);
+            if (!u) return;
+            lastUsage = { data: u, source: url.indexOf('/key-usage/') >= 0 ? 'key' : 'total' };
+            if (pricing) injectStrip(u, lastUsage.source);
+            else loadPricing().then(function(){ injectStrip(u, lastUsage.source); }).catch(function(){});
         }
 
         window.addEventListener('cc-data', function(e) {
@@ -204,6 +194,10 @@
         setInterval(function() {
             var rs = window.__ccResps;
             if (rs && rs.length) { while (rs.length) { var r = rs.shift(); processUsage(r.data, r.url); } }
+            // Re-inject if the dashboard re-rendered and wiped our strip
+            if (pricing && lastUsage && !document.querySelector('.cc-strip')) {
+                injectStrip(lastUsage.data, lastUsage.source);
+            }
         }, 300);
 
         setInterval(function() {
