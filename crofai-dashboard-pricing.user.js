@@ -186,10 +186,25 @@
         try { var c = GM_getValue('_cp', null); if (c) { var p = JSON.parse(c); if (Array.isArray(p.d) && Date.now() - p.t < CACHE_MS) { pricing = buildMap(p.d); pricingTime = p.t; console.log('[CrofCost] Cached: ' + pricing.size + ' models'); } } } catch(e) {}
         injectInterceptor();
 
+        // Track whether we have a key filter active — prefer per-key data over total
+        function hasKeyFilter() {
+            var fb = document.getElementById('filter-banner');
+            return fb && fb.style.display !== 'none';
+        }
+
         window.addEventListener('cc-data', function(e) {
             var usage = parseUsage(e.detail.data, e.detail.url);
-            // Process total usage or monthly-usage endpoints (key-usage only returns partial data, skip it)
-            if (usage && (e.detail.url.indexOf('/user-api/usage') >= 0 || e.detail.url.indexOf('/monthly-usage-api/') >= 0)) {
+            if (!usage) return;
+            var url = e.detail.url;
+            var isKeyUsage = url.indexOf('/key-usage/') >= 0;
+            var isTotalUsage = url.indexOf('/user-api/usage') >= 0;
+            var isMonthly = url.indexOf('/monthly-usage-api/') >= 0;
+            // On per-key view: use key-usage data (it's filtered correctly).
+            // On parent page: use total or monthly-usage.
+            if (isKeyUsage && hasKeyFilter()) {
+                if (pricing) injectStrip(usage, 'key');
+                else loadPricing().then(function(){ injectStrip(usage, 'key'); }).catch(function(){});
+            } else if ((isTotalUsage || isMonthly) && !hasKeyFilter()) {
                 if (pricing) injectStrip(usage, 'total');
                 else loadPricing().then(function(){ injectStrip(usage, 'total'); }).catch(function(){});
             }
@@ -197,7 +212,7 @@
 
         setInterval(function() {
             var rs = window.__ccResps;
-            if (rs && rs.length) { while (rs.length) { var r = rs.shift(); var usage = parseUsage(r.data, r.url); if (usage && (r.url.indexOf('/user-api/usage') >= 0 || r.url.indexOf('/monthly-usage-api/') >= 0)) { if (pricing) injectStrip(usage, 'total'); else loadPricing().then(function(){ injectStrip(usage, 'total'); }).catch(function(){}); } } }
+            if (rs && rs.length) { while (rs.length) { var r = rs.shift(); var usage = parseUsage(r.data, r.url); if (!usage) continue; var url = r.url; var isKey = url.indexOf('/key-usage/') >= 0; var isTotal = url.indexOf('/user-api/usage') >= 0; var isMonthly = url.indexOf('/monthly-usage-api/') >= 0; if (isKey && hasKeyFilter()) { if (pricing) injectStrip(usage, 'key'); else loadPricing().then(function(){ injectStrip(usage, 'key'); }).catch(function(){}); } else if ((isTotal || isMonthly) && !hasKeyFilter()) { if (pricing) injectStrip(usage, 'total'); else loadPricing().then(function(){ injectStrip(usage, 'total'); }).catch(function(){}); } } }
         }, 300);
 
         setInterval(function() {
