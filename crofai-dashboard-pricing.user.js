@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Crof.ai Dashboard Cost Enrichment
 // @namespace    https://crof.ai/
-// @version      1.7.3
+// @version      1.7.4
 // @description  Shows per-model cost breakdown on Crof.ai dashboard usage charts.
 // @author       CrofUserScripts
 // @match        https://crof.ai/dashboard
@@ -17,7 +17,7 @@
 (function () {
     'use strict';
     var CACHE_MS = 10 * 60 * 1000;
-    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.3';
+    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.4';
 
     async function loadPricing(force) {
         var now = Date.now();
@@ -104,10 +104,12 @@
         if (!usage || (!usage.input && !usage.output)) return;
         // Remove old strips wherever they are
         document.querySelectorAll('.cc-strip,.cc-breakdown').forEach(function(el) { el.remove(); });
-        // Inject after .usage-toggle (stable sibling, survives chart re-renders)
-        var anchor = document.querySelector('.usage-toggle');
-        var target = anchor ? anchor.parentElement : document.body;
-        var ref = anchor ? anchor.nextElementSibling : target.firstChild;
+        // Inject inside the chart container to inherit its centering/padding.
+        // When the chart re-renders and wipes the strip, the 300ms interval
+        // re-injects it from lastUsage.
+        var chart = document.querySelector('.total_tokens_chart');
+        var target = chart || document.body;
+        var ref = chart ? chart.firstChild : target.firstChild;
 
         var modelCosts = [], totalCost = 0, totalIn = 0, totalOut = 0, totalCache = 0;
         if (pricing && pricing.size && usage.perModel) {
