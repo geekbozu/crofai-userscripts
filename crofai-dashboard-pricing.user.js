@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Crof.ai Dashboard Cost Enrichment
 // @namespace    https://crof.ai/
-// @version      1.7.1
+// @version      1.7.2
 // @description  Shows per-model cost breakdown on Crof.ai dashboard usage charts.
 // @author       CrofUserScripts
 // @match        https://crof.ai/dashboard
@@ -188,8 +188,8 @@
 
         // Track whether we have a key filter active — prefer per-key data over total
         function hasKeyFilter() {
-            var fb = document.getElementById('filter-banner');
-            return fb && fb.style.display !== 'none';
+            var fn = document.getElementById('filter-key-name');
+            return fn && fn.textContent.trim() !== '';
         }
 
         window.addEventListener('cc-data', function(e) {
