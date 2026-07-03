@@ -28,21 +28,21 @@ Adds a cost strip above the usage chart with:
 
 ## Quick Install
 
-Click to install:
-
-```
-https://raw.githubusercontent.com/geekbozu/crofai-userscripts/main/crofai-dashboard-pricing.user.js
-```
+[Click to install](https://raw.githubusercontent.com/geekbozu/crofai-userscripts/main/crofai-dashboard-pricing.user.js) (stable — `main` branch)
 
 Or manually:
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) for Firefox
-2. Open Tampermonkey → **Dashboard** → **+** (new script)
-3. Delete the template, paste the full contents of `crofai-dashboard-pricing.user.js`
-4. Save (`Ctrl+S`)
-5. Visit `https://crof.ai/dashboard`
+2. Click the install link above
+3. Tampermonkey will prompt you to install/update
+4. Visit `https://crof.ai/dashboard`
 
-Tampermonkey will auto-check for updates via the `@downloadURL` / `@updateURL` directives.
+Tampermonkey auto-checks for updates via `@downloadURL` / `@updateURL` — the stable `main` branch.
+
+> **Pre-release / bleeding-edge builds** are on the `dev` branch:
+> ```
+> https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js
+> ```
 
 ## Development
 
@@ -51,7 +51,25 @@ git clone https://github.com/geekbozu/crofai-userscripts.git
 cd crofai-userscripts
 ```
 
-Edit `crofai-dashboard-pricing.user.js`, then reload the dashboard to test.
+### Branch workflow
+
+- **`main`** — stable, release-ready. Tampermonkey's `@downloadURL` points here.
+- **`dev`** — active development. Test changes here first.
+
+```bash
+git checkout dev      # work on dev
+# ... make changes, test in browser ...
+git add -A
+git commit -m "your message"
+git push origin dev
+
+# When stable, merge to main:
+git checkout main
+git merge dev
+git push origin main
+```
+
+Edit `crofai-dashboard-pricing.user.js`, reload the dashboard to test.
 
 ## License
 
