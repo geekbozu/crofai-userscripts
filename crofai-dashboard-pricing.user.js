@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Crof.ai Dashboard Cost Enrichment
 // @namespace    https://crof.ai/
-// @version      1.7.0
+// @version      1.7.1
 // @description  Shows per-model cost breakdown on Crof.ai dashboard usage charts.
 // @author       CrofUserScripts
 // @match        https://crof.ai/dashboard
