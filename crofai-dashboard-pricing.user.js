@@ -10,8 +10,8 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-start
-// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/main/crofai-dashboard-pricing.user.js
-// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/main/crofai-dashboard-pricing.user.js
+// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js
+// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js
 // ==/UserScript==
 
 (function () {
