@@ -11,8 +11,8 @@
 // @grant        GM_setValue
 // @grant        unsafeWindow
 // @run-at       document-start
-// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.7
-// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.7
+// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/main/crofai-dashboard-pricing.user.js?v=1.7.7
+// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/main/crofai-dashboard-pricing.user.js?v=1.7.7
 // ==/UserScript==
 
 (function () {
