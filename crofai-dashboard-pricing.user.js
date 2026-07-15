@@ -10,8 +10,8 @@
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @run-at       document-start
-// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js
-// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js
+// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.6
+// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.6
 // ==/UserScript==
 
 (function () {
@@ -101,7 +101,7 @@
 
     // ─── Enrich chart ────────────────────────────────────────────────
     function injectStrip(usage, source) {
-        if (!usage || (!usage.input && !usage.output)) return;
+        if (!usage) return;
         // Remove old strips wherever they are
         document.querySelectorAll('.cc-strip,.cc-breakdown').forEach(function(el) { el.remove(); });
         // Inject inside the chart container to inherit its centering/padding.
