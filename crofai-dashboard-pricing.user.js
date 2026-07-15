@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Crof.ai Dashboard Cost Enrichment
 // @namespace    https://crof.ai/
-// @version      1.7.6
+// @version      1.7.7
 // @description  Shows per-model cost breakdown on Crof.ai dashboard usage charts.
 // @author       CrofUserScripts
 // @match        https://crof.ai/dashboard
@@ -9,15 +9,16 @@
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        unsafeWindow
 // @run-at       document-start
-// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.6
-// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.6
+// @downloadURL  https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.7
+// @updateURL    https://raw.githubusercontent.com/geekbozu/crofai-userscripts/dev/crofai-dashboard-pricing.user.js?v=1.7.7
 // ==/UserScript==
 
 (function () {
     'use strict';
     var CACHE_MS = 10 * 60 * 1000;
-    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.6';
+    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.7';
 
     async function loadPricing(force) {
         var now = Date.now();
@@ -185,7 +186,13 @@
             // Key-usage returning empty data (no usage this period) → zero-cost record
             if (!u && isKey) u = { input: 0, output: 0, cache: 0, models: new Set(), perModel: {} };
             if (!u) return;
-            // Don't let total-usage overwrite key-usage while a key filter is active
+            // Skip stale key-usage responses that don't match the current filter
+            if (isKey) {
+                var activeToken = unsafeWindow.activeKeyFilter;
+                var token = url.substring(url.lastIndexOf('/') + 1);
+                if (activeToken && token !== activeToken) return;
+            }
+            // Don't let total-usage overwrite while a key filter is active
             if (!isKey && lastUsage && lastUsage.source === 'key') return;
             lastUsage = { data: u, source: isKey ? 'key' : 'total' };
             if (pricing) injectStrip(u, lastUsage.source);
