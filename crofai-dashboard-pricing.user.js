@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Crof.ai Dashboard Cost Enrichment
 // @namespace    https://crof.ai/
-// @version      1.7.5
+// @version      1.7.6
 // @description  Shows per-model cost breakdown on Crof.ai dashboard usage charts.
 // @author       CrofUserScripts
 // @match        https://crof.ai/dashboard
@@ -17,7 +17,7 @@
 (function () {
     'use strict';
     var CACHE_MS = 10 * 60 * 1000;
-    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.5';
+    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.6';
 
     async function loadPricing(force) {
         var now = Date.now();
@@ -181,8 +181,10 @@
         // we can re-inject when the dashboard wipes our strip on re-render.
         function processUsage(data, url) {
             var u = parseUsage(data, url);
-            if (!u) return;
             var isKey = url && url.indexOf('/key-usage/') >= 0;
+            // Key-usage returning empty data (no usage this period) → zero-cost record
+            if (!u && isKey) u = { input: 0, output: 0, cache: 0, models: new Set(), perModel: {} };
+            if (!u) return;
             // Don't let total-usage overwrite key-usage while a key filter is active
             if (!isKey && lastUsage && lastUsage.source === 'key') return;
             lastUsage = { data: u, source: isKey ? 'key' : 'total' };
