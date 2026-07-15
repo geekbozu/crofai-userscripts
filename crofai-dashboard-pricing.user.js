@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Crof.ai Dashboard Cost Enrichment
 // @namespace    https://crof.ai/
-// @version      1.7.4
+// @version      1.7.5
 // @description  Shows per-model cost breakdown on Crof.ai dashboard usage charts.
 // @author       CrofUserScripts
 // @match        https://crof.ai/dashboard
@@ -17,7 +17,7 @@
 (function () {
     'use strict';
     var CACHE_MS = 10 * 60 * 1000;
-    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.4';
+    var pricing = null, pricingTime = 0, lastUsage = null, VERSION = '1.7.5';
 
     async function loadPricing(force) {
         var now = Date.now();
@@ -176,15 +176,16 @@
         try { var c = GM_getValue('_cp', null); if (c) { var p = JSON.parse(c); if (Array.isArray(p.d) && Date.now() - p.t < CACHE_MS) { pricing = buildMap(p.d); pricingTime = p.t; console.log('[CrofCost] Cached: ' + pricing.size + ' models'); } } } catch(e) {}
         injectInterceptor();
 
-        // Process all usage data — key-usage (per-key) endpoints naturally
-        // overwrite total-usage results when they arrive second, giving the
-        // correct per-model breakdown without any DOM-dependent filter checks.
-        // Saves lastUsage so we can re-inject when the dashboard wipes our strip
-        // (e.g. on clear-filter or month navigation).
+        // Process usage data — key-usage is preferred over total; once a key
+        // filter is active, total-usage won't overwrite it. Saves lastUsage so
+        // we can re-inject when the dashboard wipes our strip on re-render.
         function processUsage(data, url) {
             var u = parseUsage(data, url);
             if (!u) return;
-            lastUsage = { data: u, source: url.indexOf('/key-usage/') >= 0 ? 'key' : 'total' };
+            var isKey = url && url.indexOf('/key-usage/') >= 0;
+            // Don't let total-usage overwrite key-usage while a key filter is active
+            if (!isKey && lastUsage && lastUsage.source === 'key') return;
+            lastUsage = { data: u, source: isKey ? 'key' : 'total' };
             if (pricing) injectStrip(u, lastUsage.source);
             else loadPricing().then(function(){ injectStrip(u, lastUsage.source); }).catch(function(){});
         }
@@ -195,7 +196,10 @@
 
         setInterval(function() {
             var rs = window.__ccResps;
-            if (rs && rs.length) { while (rs.length) { var r = rs.shift(); processUsage(r.data, r.url); } }
+            if (rs && rs.length) {
+                try { while (rs.length) { var r = rs.shift(); processUsage(r.data, r.url); } }
+                catch(e) { console.warn('[CrofCost] drain error:', e); }
+            }
             // Re-inject if the dashboard re-rendered and wiped our strip
             if (pricing && lastUsage && !document.querySelector('.cc-strip')) {
                 injectStrip(lastUsage.data, lastUsage.source);
@@ -204,7 +208,8 @@
 
         setInterval(function() {
             var rs = window.__ccReqs;
-            if (rs && rs.length) { while (rs.length) { var r = rs.shift(); console.log('[CrofCost] 📡 ' + r.t + ': ' + r.url); } }
+            try { if (rs && rs.length) { while (rs.length) { var r = rs.shift(); console.log('[CrofCost] 📡 ' + r.t + ': ' + r.url); } } }
+            catch(e) {}
         }, 500);
 
         loadPricing().then(function(){ console.log('[CrofCost] ✅ ' + pricing.size + ' models'); }).catch(function(){});
